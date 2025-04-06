@@ -1,4 +1,4 @@
-ï»¿#include <opencv2/highgui.hpp>
+#include <opencv2/highgui.hpp>
 #include <iostream>
 
 #ifdef _DEBUG
@@ -10,38 +10,58 @@
 using namespace cv;
 using namespace std;
 
-// ë°•ìŠ¤ í•„í„°ë¥¼ êµ¬í˜„í•œ í•¨ìˆ˜.
-// ì°¸ì¡° ë°©ì‹ìœ¼ë¡œ ë§¤ê°œë³€ìˆ˜ ì „ë‹¬. í•¨ìˆ˜ ë‚´ì—ì„œ ì € ë³€ìˆ˜ë¥¼ ìˆ˜ì •í•  ì‹œ ê·¸ ì›ë³¸ ë˜í•œ ìˆ˜ì •ë¨.
-void box(const Mat& src, Mat& dst, int a, int b, float sigma) {
-    float sigma2 = sigma * sigma;
-    dst.create(src.size(), src.type());
+// ¹Ú½º ÇÊÅÍ¸¦ ±¸ÇöÇÑ ÇÔ¼ö. ¸ğµç ÇÈ¼¿À» ¼øÈ¸ÇÏ´Âµ¥, 
+// °¢ ÇÈ¼¿ (x, y)¸¦ Áß½ÉÀ¸·Î (2*a + 1) x (2*b + 1) Å©±âÀÇ ÇÊÅÍ¸¦ °¡Áö°í ¹Ú½º-ÇÊÅÍ¸µÇÔ.
+// °æ°è¿¡¼­´Â Á¦·Î ÆĞµù ´ë½Å ¹İ»ç ÆĞµù(Reflection padding) ¹æ½ÄÀ» »ç¿ëÇÏ°í ÀÖÀ½.
+// 
+// src: ÀÔ·Â ÀÌ¹ÌÁö, dst: Ãâ·Â ÀÌ¹ÌÁö.
+// a: xÃà Ä¿³Î ¹İÁö¸§, b: yÃà Ä¿³Î ¹İÁö¸§.
+// 
+// ÂüÁ¶ ¹æ½ÄÀ¸·Î ¸Å°³º¯¼ö¸¦ Àü´ŞÇÏ°í ÀÖÀ½. ÇÔ¼ö ³»¿¡¼­ Àú º¯¼ö¸¦ ¼öÁ¤ÇÒ ½Ã ±× ¿øº» ¶ÇÇÑ ¼öÁ¤µÊ.
+void gaussian(const Mat& src, Mat& dst, int a, int b) {
+    dst.create(src.size(), src.type()); // src¿Í µ¿ÀÏÇÑ Å©±â ¹× Å¸ÀÔÀ¸·Î Çà·Ä(ÀÌ¹ÌÁö) dst¸¦ ¸¸µê.
+
+    // ¸ğµç ÇÈ¼¿¿¡ ´ëÇØ ¼øÈ¸ÇÔ.
     for (int y = 0; y < src.rows; y++) {
         for (int x = 0; x < src.cols; x++) {
             float sum = 0;
-            float wsum = 0;
+
+            // ¾Æ·¡ °è»êÀ» ÅëÇØ ÇÊÅÍÀÇ ¿ŞÂÊ ¾Æ·¡ºÎÅÍ ¿À¸¥ÂÊ À§±îÁöÀÇ ÇÊÅÍ¸µ °á°ú¸¦ ±¸ÇÏ°í ÀÖÀ½.
+            // Ä¿³Î ¿µ¿ª Å½»ö (y-b ~ y+b)
             for (int t = -b; t <= b; t++) {
+                // Ä¿³Î ¿µ¿ª Å½»ö (x-a ~ x+a)
                 for (int s = -a; s <= a; s++) {
+                    // °¢ »óÇÏÁÂ¿ì °æ°èµé¿¡ ´ëÇÑ ¹İ»ç ÆĞµù Àû¿ë.
                     int xx = x + s;
                     int yy = y + t;
-                    if (xx < 0) xx = -xx;
-                    if (xx >= src.cols) xx = src.cols * 2 - xx - 1;
-                    if (yy < 0) yy = -yy;
-                    if (yy >= src.rows) yy = src.rows * 2 - yy - 1;
-                    float w = exp(-(s * s + t * t) / sigma2);
-                    sum += w * src.at<float>(yy, xx);
-                    wsum += w;
+                    if (xx < 0) xx = -xx; // ÁÂÃø
+                    if (xx >= src.cols) xx = src.cols * 2 - xx - 1; // ¿ìÃø
+                    if (yy < 0) yy = -yy; // À§ÂÊ
+                    if (yy >= src.rows) yy = src.rows * 2 - yy - 1; // ¾Æ·¡ÂÊ
+
+                    // °¡ÁßÄ¡¸¦ ÇÈ¼¿¿¡ °öÇÑ °á°ú °è»ê ¹× ´©Àû.
+                    // ¿©±â¼­, °¡ÁßÄ¡µé ÃÑ ÇÕÀÌ 1ÀÌ µÇ¾î¾ß ÇÏ¹Ç·Î ÇÊÅÍ Å©±â·Î Á¤±ÔÈ­.
+                    sum += 1 / float((2 * a + 1) * (2 * b + 1)) * src.at<float>(yy, xx);
                 }
             }
-            dst.at<float>(y, x) = sum / wsum;
+            // ¾Æ±î ±¸ÇÑ °¡ÁßÄ¡¸¦ °öÇÑ ÇÈ¼¿°ªµéÀÇ ÇÕÀ» ÃÖÁ¾ °á°ú ÀÌ¹ÌÁö¿¡ ÀúÀå.
+            dst.at<float>(y, x) = sum;
         }
     }
 }
 
+// Âü°í) Mat.at<type>(row, col) ÇÔ¼ö: Æ¯Á¤ À§Ä¡ÀÇ °ª¿¡ Á¢±ÙÇÒ ¶§ ¾²´Â ÇÔ¼ö.
+// <type>¿¡´Â ÇØ´ç ÀÌ¹ÌÁöÀÇ Å¸ÀÔÀ», (row, col)¿¡´Â ÁÂÇ¥¸¦ ³Ö¾îÁÖ¸é µÊ.
+// ex1. src.at<float>(y, x) ¡æ float Å¸ÀÔ ÀÌ¹ÌÁö (CV_32FC1)
+// ex2. src.at<uchar>(y, x) ¡æ 8ºñÆ® Èæ¹é ÀÌ¹ÌÁö (CV_8UC1)
+// ex3. src.at<cv::Vec3b>(y, x) ¡æ 8ºñÆ® ÄÃ·¯ ÀÌ¹ÌÁö (CV_8UC3)
 
 int main()
-{   
-    //Mat src = imread("../img/paris.jpg", 0); // ì»¬ëŸ¬ë¡œ ì½ì„ë˜ìš”? -> 0(ì•„ë‹ˆìš”, í‘ë°±)
-    Mat src = imread("../img/paris.jpg", 0); 
+{
+    // µÎ ¹øÂ° ÀÎÀÚ´Â 'ÄÃ·¯·Î ÀĞÀ»±î¿ä?' ÇÏ°í ¹°¾îº¸´Â °ÅÀÓ. 0: Èæ¹é, Default: ÄÃ·¯.
+    // ÇÊÅÍ ±¸ÇöÀ» ÄÃ·¯·Î ÇÒ °Å¸é RGB°ªÀ» °¢°¢ ´Ù·ïÁà¾ß ÇÔ. ±ÍÂú¾Æ!!
+    // ±×·¡¼­ ¿ì¸®´Â Èæ¹éÀ¸·Î ¹à±â ÇÏ³ª¸¸ °¡Áö°í ´Ù·ê °ÅÀÓ. µû¶ó¼­ ÀÎÀÚ¸¦ 0À¸·Î ³Ñ°ÜÁÜ. 
+    Mat src = imread("../img/paris.jpg", 0);
     if (src.empty()) {
         cout << "Error: Could not load image!" << endl;
         return -1;
@@ -49,10 +69,11 @@ int main()
     src.convertTo(src, CV_32F, 1 / 255.f);
 
     Mat dst;
-    box(src, dst, 11, 11, 5);
+    // ÀÎÀÚ: ¿øº» ÀÌ¹ÌÁö, °á°ú ÀÌ¹ÌÁö, ÇÊÅÍ ³Êºñ, ÇÊÅÍ ³ôÀÌ.
+    gaussian(src, dst, 0, 0); // ÀÌ°Å 0, 0À¸·Î ÁÖ¸éÀº ±×³É ¿øº»ÀÌ¶û ¶È°°ÀÌ ³ª¿È.
     imshow("window", dst);
     //Mat pp;
     //pow(dst, 2.2, pp);
-    //imshow("Image", pp);
+    //imshow("Image", pp); // °¨¸¶ º¸Á¤
     waitKey();
 }

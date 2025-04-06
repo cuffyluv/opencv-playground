@@ -18,6 +18,9 @@
     <ClCompile Include="1-basic-opencv.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="3-gaussian-filter.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
     <ClCompile Include="2-box-filter.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
