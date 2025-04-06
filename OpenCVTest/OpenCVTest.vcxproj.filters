@@ -15,7 +15,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="OpenCVTest.cpp">
+    <ClCompile Include="1-basic-opencv.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="2-box-filter.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
