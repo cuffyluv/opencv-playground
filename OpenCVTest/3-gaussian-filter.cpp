@@ -69,7 +69,7 @@ int main()
     // 두 번째 인자는 '컬러로 읽을까요?' 하고 물어보는 거임. 0: 흑백, Default: 컬러.
     // 필터 구현을 컬러로 할 거면 RGB값을 각각 다뤄줘야 함. 귀찮아!!
     // 그래서 우리는 흑백으로 밝기 하나만 가지고 다룰 거임. 따라서 인자를 0으로 넘겨줌. 
-    Mat src = imread("../img/paris.jpg", 0); 
+    Mat src = imread("../img/cat.jpg", 0); 
     if (src.empty()) {
         cout << "Error: Could not load image!" << endl;
         return -1;
@@ -78,10 +78,11 @@ int main()
 
     Mat dst;
     // 인자: 원본 이미지, 결과 이미지, 필터 너비, 필터 높이, 가중치 조절 파라미터 시그마.
-    gaussian(src, dst, 11, 11, 5); 
-    imshow("window", dst);
-    //Mat pp;
-    //pow(dst, 2.2, pp);
-    //imshow("Image", pp); // 감마 보정
+    gaussian(src, dst, 5, 5, 5); 
+    imshow("MyLittleCat", dst);
+
+    Mat saveimg;
+    dst.convertTo(saveimg, CV_8U, 255.0);
+    imwrite("../img/res_img/cat_gaussian_filtered.jpg", saveimg);
     waitKey();
 }

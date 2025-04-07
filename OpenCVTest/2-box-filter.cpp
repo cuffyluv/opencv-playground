@@ -18,7 +18,7 @@ using namespace std;
 // a: x축 커널 반지름, b: y축 커널 반지름.
 // 
 // 참조 방식으로 매개변수를 전달하고 있음. 함수 내에서 저 변수를 수정할 시 그 원본 또한 수정됨.
-void gaussian(const Mat& src, Mat& dst, int a, int b) {
+void box(const Mat& src, Mat& dst, int a, int b) {
     dst.create(src.size(), src.type()); // src와 동일한 크기 및 타입으로 행렬(이미지) dst를 만듦.
 
     // 모든 픽셀에 대해 순회함.
@@ -61,7 +61,7 @@ int main()
     // 두 번째 인자는 '컬러로 읽을까요?' 하고 물어보는 거임. 0: 흑백, Default: 컬러.
     // 필터 구현을 컬러로 할 거면 RGB값을 각각 다뤄줘야 함. 귀찮아!!
     // 그래서 우리는 흑백으로 밝기 하나만 가지고 다룰 거임. 따라서 인자를 0으로 넘겨줌. 
-    Mat src = imread("../img/paris.jpg", 0);
+    Mat src = imread("../img/cat.jpg", 0);
     if (src.empty()) {
         cout << "Error: Could not load image!" << endl;
         return -1;
@@ -70,10 +70,11 @@ int main()
 
     Mat dst;
     // 인자: 원본 이미지, 결과 이미지, 필터 너비, 필터 높이.
-    gaussian(src, dst, 0, 0); // 이거 0, 0으로 주면은 그냥 원본이랑 똑같이 나옴.
-    imshow("window", dst);
-    //Mat pp;
-    //pow(dst, 2.2, pp);
-    //imshow("Image", pp); // 감마 보정
+    box(src, dst, 4, 4); // 이거 0, 0으로 주면은 그냥 원본이랑 똑같이 나옴.
+    imshow("MyLittleCat", dst);
+
+    Mat saveimg;
+    dst.convertTo(saveimg, CV_8U, 255.0);
+    imwrite("../img/res_img/cat_box_filtered.jpg", saveimg);
     waitKey();
 }
